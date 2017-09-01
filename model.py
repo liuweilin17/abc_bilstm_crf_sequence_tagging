@@ -11,14 +11,11 @@ class PropertiesClass(object):
         #embedding layer
         with tf.device('/cpu:0'), tf.name_scope('embedding'):
             emb_W = tf.Variable(tf.random_uniform([FLAGS.vocab_num, FLAGS.embedding_size], 0., 1.), name='emb_W')
-#            emb_num = tf.Variable(tf.random_uniform([FLAGS.classes, FLAGS.embedding_size / 4], 0., 1.), name='emb_num')
             embedding_chars = tf.nn.embedding_lookup(emb_W, self.input_x)
-#            embedding_num = tf.nn.embedding_lookup(emb_num, self.input_num)
-#            input_item = tf.concat([embedding_chars, embedding_num], axis=2)
             input_item = embedding_chars
 
         self.mask_x = tf.sign(self.input_x)
-        self.sequence_length = tf.reduce_sum(self.mask_x, axis=1)
+        self.sequence_length = tf.reduce_sum(self.mask_x, axis=1)   #the length of each row in input_x
 
         rnn_cell_fw = tf.contrib.rnn.BasicLSTMCell(FLAGS.hidden_size)
         rnn_cell_fw = tf.contrib.rnn.DropoutWrapper(rnn_cell_fw, output_keep_prob=self.keep_prob)
