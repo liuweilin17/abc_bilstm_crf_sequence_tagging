@@ -9,25 +9,29 @@ tmp = ""
 label = []
 data_list = []
 label_list = []
+test_list = []
 count = 1
 with open(input_file) as f:
 	for line in f:
 		if(line!="\n" and len(line.split("\t")) == 2):
 			line_arr = line.split("\t")
 			tmp += line_arr[0]
-			print("count:" + str(count) + "--" + line)
+			#print("count:" + str(count) + "--" + line)
 			#print(line_arr[1].strip())
 			label.append(int(line_arr[1].strip()))
 		else:
 			data_list.append(tmp)
 			label_list.append(label)
+			if count%5 == 0:
+				test_list.append(tmp)
 			tmp = ""
 			label = []
-		count += 1
+			count += 1
 	if(tmp != ""):
 			data_list.append(tmp)
 			label_list.append(label)
 
 np.save('data.npy', data_list)
 np.save('label.npy', label_list)
+np.save('test.npy', test_list)
 
