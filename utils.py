@@ -17,10 +17,6 @@ class DataProcessor(object):
         self.index_docs = self.index_docs[random_order, :]
         self.docs = self.docs[random_order]
 
-        print("docs:"+str(self.docs)+"\nvocab:" + str(self.vocab))
-        print("labels:" + str(self.labels) + "\nrandom_order:" + str(random_order))
-        print("index_docs:" + str(self.index_docs) + "\nrandom_order:" + str(random_order))
-
     @staticmethod
     def read_file(data_file):
         docs = np.load(data_file)
@@ -34,7 +30,7 @@ class DataProcessor(object):
         labels = np.load(label_file)
         max_len = max([len(label) for label in labels])
         labels = [label + [maskid] * (max_len - len(label)) for label in labels]   #padding
-        labels = np.asarray(labels) #convert the input to an array
+        labels = np.array(labels) #convert the input to an array
         return labels
 
     @staticmethod
@@ -85,6 +81,27 @@ def get_data(data_file, label_file):
     docs = dataset.get_raw_docs()
     return data, labels, vocab, docs
 
+def get_test_data(test_file, vocab, max_len):
+    print("in get_test_data:")
+    docs = np.load(test_file)
+    docs = [str(doc) for doc in docs]
+    docs = [doc.decode('utf-8') for doc in docs]
+    docs = np.array(docs)
+    print("docs:" + str(docs.shape))
+    index_docs = []
+    for doc in docs:
+        index_list = []
+        for word in doc:
+                if word not in vocab:
+                        word = u'unk'
+                index_list.append(vocab[word])
+        index_docs.append(index_list)
+
+    #max_len = max([len(doc) for doc in index_docs]) + 1
+    index_docs = [doc + [vocab['mask']] * (max_len - len(doc)) for doc in index_docs]
+    index_docs = np.array(index_docs)
+    return index_docs    
+
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """
     Generates a batch iterator for a dataset.
@@ -103,6 +120,44 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
             yield shuffled_data[start_index:end_index]
+
+def cal_pre_rec(label_list, prediction, ground_truth):
+
+    true_record = {}
+    predict_record = {}
+    ground_record = {}
+    ret = []
+    for label in label_list:
+        true_record[label] = 0
+        predict_record[label] = 0
+        ground_record[label] = 0
+
+    for predition_, ground_truth_ in zip(prediction, ground_truth):
+        for i, j in zip(predition_, ground_truth_):
+            if i == j:
+                true_record[i] += 1
+                predict_record[i] += 1
+                ground_record[i] += 1
+            else:
+                predict_record[i] += 1
+                ground_record[j] += 1
+
+    for label in label_list:
+        if predict_record[label] != 0:
+            prec = true_record[label] / float(predict_record[label])
+        else:
+            prec = -1
+        if ground_record[label] != 0:
+            recall = true_record[label] / float(ground_record[label])
+        else:
+            recall = -1
+        if prec == -1 or recall == -1 or prec == 0 or recall == 0:
+            F1 = -1
+        else:
+            F1 = (prec * recall) / float(2 * prec * recall)
+
+        ret.append([label ,prec, recall, F1])
+    return ret
 
 if __name__=='__main__':
     x, y1, vocab, docs = GetData('/home/yanyun/leeyanyun/lyy0714/data_170816.npy', '/home/yanyun/leeyanyun/lyy0714/label_170816.npy')
